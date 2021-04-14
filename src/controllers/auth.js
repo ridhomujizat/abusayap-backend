@@ -3,7 +3,7 @@ const response = require('../helpers/response')
 const sendEmail = require('../helpers/sendEmail')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { APP_KEY, APP_URL } = process.env
+const { APP_KEY, APP_URL, CLIENT_URL } = process.env
 
 exports.signUp = async (req, res) => {
   try {
@@ -28,7 +28,7 @@ exports.signUp = async (req, res) => {
         createUser = await userModel.createUser({ firstname, email, password: encryptedPassword, role: 2, status: 'pending', balance: 120000 })
       }
       if (createUser.insertId > 0) {
-        sendEmail(createUser.insertId, `${APP_URL}/auth/verification/${createUser.insertId}`, 'Verify Email Address', "Thanks for signing up for ABUSAYAP! We're excited to have you as an early user.")
+        sendEmail(createUser.insertId, `${APP_URL}auth/verification/${createUser.insertId}`, 'Verify Email Address', "Thanks for signing up for ABUSAYAP! We're excited to have you as an early user.")
         return response(res, 200, true, 'Register Success, Please verification email!', {
           id: createUser.insertId
         })
@@ -75,7 +75,7 @@ exports.verificationEmail = async (req, res) => {
     const { id } = req.params
     if (id) {
       await userModel.updateUser(id, { status: 'active' })
-      return res.redirect(`https://abusayap.netlify.app/create-pin/${id}`)
+      return res.redirect(`${CLIENT_URL}create-pin/${id}`)
     }
     return response(res, 400, false, 'Failed email verification')
   } catch (error) {
@@ -90,7 +90,7 @@ exports.forgotPassword = async (req, res) => {
     if (existingUser.length > 0) {
       const id = existingUser[0].id
       const token = jwt.sign({ id }, APP_KEY)
-      sendEmail(existingUser[0].id, `https://abusayap.netlify.app/create-new-password/${token}`, 'Reset Password', 'To reset your password, click the following link and follow the instructions.')
+      sendEmail(existingUser[0].id, `${CLIENT_URL}create-new-password/${token}`, 'Reset Password', 'To reset your password, click the following link and follow the instructions.')
       return response(res, 200, true, 'Please check email to reset password!', { id: token })
     }
     return response(res, 401, false, 'Email not registered')
@@ -105,7 +105,7 @@ exports.forgotPasswordMobile = async (req, res) => {
     const existingUser = await userModel.getUsersByCondition({ email })
     if (existingUser.length > 0) {
       const id = existingUser[0].id
-      sendEmail(existingUser[0].id, 'https://abusayap.netlify.app/create-new-password', 'Reset Password', 'To reset your password, click the following link and follow the instructions.')
+      sendEmail(existingUser[0].id, `${CLIENT_URL}/create-new-password`, 'Reset Password', 'To reset your password, click the following link and follow the instructions.')
       return response(res, 200, true, 'Please check email to reset password!', { id })
     }
     return response(res, 401, false, 'Email not registered')
